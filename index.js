@@ -22,15 +22,15 @@ var colors3;
 var colors4;
 
 var blockWidth = 20;
-var width = 400;
-var height = 600;
+var widthX = 400;
+var heightY = 600;
 
 var board;
 var board2;
-var board2x = width + blockWidth + 50;
+var board2x = widthX + blockWidth + 50;
 
-var canWidth = board2x + width;
-var canHeight = height;
+var canWidth = board2x + widthX;
+var canHeight = heightY;
 
 var currentShape;
 var currentShape2;
@@ -42,6 +42,8 @@ var rate = 30;
 var logo;
 
 var player = "unknown";
+var player1Button;
+var player2Button;
 
 
 function setup() {
@@ -116,9 +118,9 @@ function setup() {
 function initBoards() {
 	// Initialize left board and fill with 0
 	board = [];
-	for (var i = 0; i < height / blockWidth + 1; i++) {
+	for (var i = 0; i < heightY / blockWidth + 1; i++) {
 		board[i] = [];
-		for (var j = 0; j < (width/2) / blockWidth; j++) {
+		for (var j = 0; j < (widthX) / blockWidth; j++) {
 			board[i][j] = 0;
 		}
 	}
@@ -129,9 +131,9 @@ function initBoards() {
 
 	// Initialize right board and fill with 0
 	board2 = [];
-	for (var i = 0; i < height / blockWidth + 1; i++) {
+	for (var i = 0; i < heightY / blockWidth + 1; i++) {
 		board2[i] = [];
-		for (var j = 0; j < width / blockWidth; j++) {
+		for (var j = 0; j < widthX / blockWidth; j++) {
 			board2[i][j] = 0;
 		}
 	}
@@ -139,15 +141,14 @@ function initBoards() {
 	for (var j = 0; j < board2[0].length; j++) {
 		board2[board2.length - 1][j] = 1;
 	}
+	displayTitleScreen();
 }
 
 //all commented out
 function draw() {
    //if first run, draw start screen
-   background(0);
-   if(!startGame) {
-     displayTitleScreen();
- } else {
+   if(startGame) {
+ 	//background(0);
     stroke(100);
     // Draw left board
     for (var r = 0; r < board.length; r++) {
@@ -374,6 +375,7 @@ function drawBlock(x, y, id) {
 }
 
 function keyPressed() {
+	console.log('press' + keyCode)
   var hit = false;
   if (keyCode == 65) {
     //A
@@ -441,12 +443,18 @@ function keyPressed() {
     currentShape2.y += 1;
   } else if (keyCode == UP_ARROW) {
     currentShape2.matrix = rotatePiece(currentShape2);
-  }
-  
-  else if(keyCode == 3 && player != "unknown") { // Space
-    startGame = true;
+  } else if(keyCode == 32 && player != "unknown") { // Space
+  	console.log('go')
+    gameStarted();
   }
 }
+
+function gameStarted() {
+    startGame = true;
+    player1Button.hide();
+    player2Button.hide();
+}
+
 
 function rotatePiece(shape) {
   var newArray = [];
@@ -625,13 +633,19 @@ function displayTitleScreen() {
   textSize(16);
   text("Player 1:", 100, 420);
   text("WASD to move, W to rotate", 100, 440);
+  player1Button = createButton("Player 1");
+  player1Button.position(120, 350);
+  player1Button.mousePressed(function() {player="one"; console.log(player)});
   
   textAlign(RIGHT);
   text("Player 2:", canWidth - 100, 420);
   text("Arrow keys to move, up arrow to rotate", canWidth - 100, 440);
-  
+  player2Button = createButton("Player 2");
+  player2Button.position(canWidth-120, 350);
+  player2Button.mousePressed(function() {player="two"; console.log(player)});
+
   textAlign(CENTER);
-  text("Chose player, then", canWidth/2, 400);
+  text("Chose player, then", canWidth/2, 480);
   text("press space to start", canWidth / 2, 500);
   
   text("Disclaimer: We are not affiliated, associated, authorized, endorsed by, or in any way officially connected with the", canWidth / 2, canHeight - 40);
@@ -663,5 +677,3 @@ function sendMouse(xpos, ypos) {
   // Send that object to the socket
   socket.emit('mouse',data);
 }
-
-
