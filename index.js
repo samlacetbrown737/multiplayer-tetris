@@ -108,7 +108,7 @@ function setup() {
 	
 	initBoards();
 
-	socket = io.connect('http://localhost:3000');
+	socket = io.connect('http://localhost:56151');
 	socket.on('mouse', newDrawing); //if client receives packet mouse, run newDrawing
 
 	currentShape = new Shape(0, 0, Math.floor(random(0, 7)), board);
