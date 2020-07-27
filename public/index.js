@@ -1,6 +1,7 @@
 /* global image, loadImage, strokeWeight, BEVEL, strokeJoin, beginShape, endShape, vertex, textAlign, CENTER, LEFT, RIGHT, UP_ARROW, keyCode, frameCount, createCanvas, stroke, width, height, windowHeight, windowWidth, colorMode, RGB, background, random, textSize, fill, text, noStroke, rect, color, key, LEFT_ARROW, RIGHT_ARROW, DOWN_ARROW*/
 /*
 TODO
+- Restart button
 - Add speeding up as score increases
 - Settings panel
 - Add sound
@@ -121,7 +122,7 @@ TODO
   pauseButton.mousePressed(function() {pause = !pause;});
   pauseButton.hide();
   resetButton = createButton("Restart");
-  resetButton.position(board2x - 32.5, 80);
+  resetButton.position(board2x - 35, 80);
   resetButton.mousePressed(reset());
   resetButton.hide();
 }
@@ -132,6 +133,7 @@ function reset() {
      board2 = new Board(board2x, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
      rate = 30;
      resetButton.hide();
+     gameIsOver = false;
 }
 
 //all commented out
