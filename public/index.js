@@ -1,7 +1,6 @@
 /* global image, loadImage, strokeWeight, BEVEL, strokeJoin, beginShape, endShape, vertex, textAlign, CENTER, LEFT, RIGHT, UP_ARROW, keyCode, frameCount, createCanvas, stroke, width, height, windowHeight, windowWidth, colorMode, RGB, background, random, textSize, fill, text, noStroke, rect, color, key, LEFT_ARROW, RIGHT_ARROW, DOWN_ARROW*/
 /*
 TODO
-- Restart button
 - Add speeding up as score increases
 - Settings panel
 - Add sound
@@ -38,8 +37,10 @@ TODO
   var gameIsOver = false;
   var rate = 30;
   var logo;
+
   var pause = false;
   var pauseButton;
+  var resetButton;
 
   var player = "unknown";
   var player1Button;
@@ -116,9 +117,21 @@ TODO
 	socket.on('mouse', newDrawing); //if client receives packet mouse, run newDrawing
 	
   pauseButton = createButton("Pause");
-  pauseButton.position(window.innerWidth / 2 - pauseButton.size().width / 2, 60);
+  pauseButton.position(board2x - 32.5, 60);
   pauseButton.mousePressed(function() {pause = !pause;});
   pauseButton.hide();
+  resetButton = createButton("Restart");
+  resetButton.position(board2x - 32.5, 80);
+  resetButton.mousePressed(reset());
+  resetButton.hide();
+}
+
+function reset() {
+  score = 0;
+  board1 = new Board(0, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
+     board2 = new Board(board2x, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
+     rate = 30;
+     resetButton.hide();
 }
 
 //all commented out
@@ -189,6 +202,7 @@ function draw() {
      fill(255);
      stroke("black");
      text("GAME OVER", canWidth / 2, canHeight / 2);
+     resetButton.show();
    }
 
    displayScore();
