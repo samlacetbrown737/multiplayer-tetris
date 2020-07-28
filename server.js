@@ -53,6 +53,8 @@ io.sockets.on('connection',
 	//   }
 	// );
 
+	var start1 = false;
+	var start2 = false;
 	 socket.on('start',
       function(data) {
         console.log("Received: 'start' " + data.user);
