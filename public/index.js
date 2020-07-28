@@ -509,8 +509,16 @@ function keyPressed() {
 	}
 }
 
-function gameStarted() {
+function gameStarted(data) {
 	background(0);
+	if(player == "unknown") {
+		console.log('setting player')
+		if(data.user == "one") {
+			player = "two";
+		} else {
+			player = "one";
+		}
+	}
 	if(player=="one") {
 		board1.createShape();
 	} else if (player=="two") {
