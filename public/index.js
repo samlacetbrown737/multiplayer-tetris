@@ -8,119 +8,117 @@ TODO
 - Check all filled rows, not just the first filled ones
 - Find better font for splash screen
 - Multiplayer on two computers
-  - Add option for four players?
-  */
+- Add option for four players?
+*/
 
-  var socket;
-  var shapes;
+var socket;
 
-  var colors;
-  var colors2;
-  var colors3;
-  var colors4;
+var shapes;
+var colors;
+var colors2;
+var colors3;
+var colors4;
 
-  var blockWidth = 20;
-  var widthX = 400;
-  var heightY = 600;
+var blockWidth = 20;
+var widthX = 400;
+var heightY = 600;
 
-  var board1;
-  var board2;
-  var board2x = widthX + blockWidth + 50;
+var board1;
+var board2;
+var board2x = widthX + blockWidth + 50;
 
-  var canWidth = board2x + widthX;
-  var canHeight = heightY;
+var canWidth = board2x + widthX;
+var canHeight = heightY;
 
-  var currentShape;
-  var currentShape2;
+var score = 0;
+var startGame = false;
+var gameIsOver = false;
+var rate = 30;
+var logo;
 
-  var score = 0;
-  var startGame = false;
-  var gameIsOver = false;
-  var rate = 30;
-  var logo;
+var pause = false;
+var pauseButton;
+var resetButton;
 
-  var pause = false;
-  var pauseButton;
-  var resetButton;
+var player = "unknown";
+var player1Button;
+var player2Button;
 
-  var player = "unknown";
-  var player1Button;
-  var player2Button;
+function setup() {
+  colorMode(RGB, 255, 255, 255, 100);
+  createCanvas(canWidth, canHeight);
+  background(0);
+  // Store 7 tetris shapes as 4 x 4 matrices
+  //1 = block, 0 = no block.
+  shapes = [
+    [[1, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], //O
+    [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]], //I
+    [[0, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], //S
+    [[1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]], //Z
+    [[1, 0, 0, 0], [1, 0, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0]], //L
+    [[0, 1, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0]], //J
+    [[1, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]] //T
+    ];
 
+  // Shape primary colors
+  colors = [
+    color(240, 240, 0), //O
+    color(2, 240, 240), //I
+    color(0, 240, 1), //S
+    color(240, 35, 0), //Z
+    color(240, 160, 0), //L
+    color(4, 47, 240), //J
+    color(160, 52, 240) //T
+    ];
 
-  function setup() {
-  	colorMode(RGB, 255, 255, 255, 100);
-  	createCanvas(canWidth, canHeight);
-  	background(0);
-	// Store 7 tetris shapes as 4 x 4 matrices
-    //1 = block, 0 = no block.
-    shapes = [
-    	[[1, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], //O
-    	[[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]], //I
-    	[[0, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], //S
-    	[[1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]], //Z
-    	[[1, 0, 0, 0], [1, 0, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0]], //L
-    	[[0, 1, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0]], //J
-    	[[1, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]] //T
-    	];
+  // Shape top border colors
+  colors2 = [
+    color(251, 251, 179), //O
+    color(179, 251, 251), //I
+    color(179, 251, 179), //S
+    color(251, 179, 179), //Z
+    color(251, 227, 179), //L
+    color(179, 179, 251), //J
+    color(227, 179, 251) //T
+    ];
 
-    // Shape primary colors
-    colors = [
-	   	color(240, 240, 0), //O
-	    color(2, 240, 240), //I
-	    color(0, 240, 1), //S
-	    color(240, 35, 0), //Z
-	    color(240, 160, 0), //L
-	    color(4, 47, 240), //J
-	    color(160, 52, 240) //T
-	    ];
+  // Shape left/right border colors
+  colors3 = [
+    color(216, 216, 1), //O
+    color(1, 216, 216), //I
+    color(0, 216, 0), //S
+    color(216, 30, 0), //Z
+    color(216, 144, 0), //L
+    color(3, 41, 216), //J
+    color(143, 46, 216) //T
+    ];
 
-    // Shape top border colors
-    colors2 = [
-	    color(251, 251, 179), //O
-	    color(179, 251, 251), //I
-	    color(179, 251, 179), //S
-	    color(251, 179, 179), //Z
-	    color(251, 227, 179), //L
-	    color(179, 179, 251), //J
-	    color(227, 179, 251) //T
-	    ];
+  //Shape bottom border color
+  colors4 = [
+    color(120, 120, 0), //O
+    color(0, 120, 120), //I
+    color(1, 120, 0), //S
+    color(120, 12, 0), //Z
+    color(120, 80, 0), //L
+    color(1, 18, 120), //J
+    color(80, 21, 120) //T
+    ];
 
-    // Shape left/right border colors
-    colors3 = [
-	    color(216, 216, 1), //O
-	    color(1, 216, 216), //I
-	    color(0, 216, 0), //S
-	    color(216, 30, 0), //Z
-	    color(216, 144, 0), //L
-	    color(3, 41, 216), //J
-	    color(143, 46, 216) //T
-	    ];
+  board1 = new Board(0, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
+  board2 = new Board(board2x, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
 
-    //Shape bottom border color
-    colors4 = [
-	    color(120, 120, 0), //O
-	    color(0, 120, 120), //I
-	    color(1, 120, 0), //S
-	    color(120, 12, 0), //Z
-	    color(120, 80, 0), //L
-	    color(1, 18, 120), //J
-	    color(80, 21, 120) //T
-	    ];
+  displayTitleScreen();
 
-     board1 = new Board(0, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
-     board2 = new Board(board2x, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
-
-     displayTitleScreen();
-
-     socket = io.connect('http://localhost:56151');
-     socket.on('move', moveOther);
-	socket.on('mouse', newDrawing); //if client receives packet mouse, run newDrawing
+  socket = io.connect('http://localhost:56151');
+  socket.on('move', moveOther);
+  socket.on('pause', setPause);
+  socket.on('startGame', gameStarted);
 	
   pauseButton = createButton("Pause");
-  pauseButton.position(board2x - 32.5, 60);
-  pauseButton.mousePressed(function() {pause = !pause;});
+  pauseButton.position(window.innerWidth / 2 - pauseButton.size().width / 2, 60);
+  pauseButton.mousePressed(function() {pause = !pause; sendPause(pause)});
   pauseButton.hide();
+
   resetButton = createButton("Restart");
   resetButton.position(board2x - 35, 80);
   resetButton.mousePressed(reset());
@@ -130,72 +128,25 @@ TODO
 function reset() {
   score = 0;
   board1 = new Board(0, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
-     board2 = new Board(board2x, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
-     rate = 30;
-     resetButton.hide();
-     gameIsOver = false;
+  board2 = new Board(board2x, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
+  rate = 30;
+  resetButton.hide();
+  gameIsOver = false;
 }
 
 //all commented out
 function draw() {
-   //if first run, draw start screen
-   if(startGame && !pause) {
+  //if first run, draw start screen
+  if(startGame && !pause) {
     background(0);
-    stroke(100);
-    // Draw left board
-    for (var r = 0; r < board1.board.length; r++) {
-    	for (var c = 0; c < board1.board[0].length; c++) {
-    		if (board1.board[r][c] == 0) {
-    			fill("black");
-    			strokeWeight(2);
-    			rect(c * blockWidth, r * blockWidth, blockWidth, blockWidth);
-    		} else {
-    			strokeWeight(2);
-    			rect(c * blockWidth, r * blockWidth, blockWidth, blockWidth);
-    			drawBlock(c * blockWidth + 2.5, r * blockWidth + 3, board1.board[r][c] - 1);
-    		}
-    	}
-    }
-    
-    stroke(100);
-    // Draw right board
-    for (var r = 0; r < board2.board.length; r++) {
-    	for (var c = 0; c < board2.board[0].length; c++) {
-    		if (board2.board[r][c] == 0) {
-    			fill("black");
-    			strokeWeight(2);
-    			rect(board2.x + (c * blockWidth), r * blockWidth, blockWidth, blockWidth);
-    		} else {
-    			strokeWeight(2);
-    			rect(board2.x + (c * blockWidth), r * blockWidth, blockWidth, blockWidth);
-    			drawBlock(board2.x + c * blockWidth + 2.5, r * blockWidth + 3, board2.board[r][c] - 1);
-    		}
 
-    	}
-    }
+    board1.draw();
+    board2.draw();
 
     if (!gameIsOver) {
-      // If left shape does not collide, fall
-      if (frameCount % rate == 0) {
-        if(!board1.doesCollide()) {
-          board1.shape.fall()
-        } else {
-          board1.shapeHit();
-        }
-      }
+      board1.update();
+      board2.update();
 
-      board1.draw();
-
-      // If right shape does not collide, fall
-      if (frameCount % rate == 0) {
-      	if (!board2.doesCollide()) {
-      		board2.shape.fall();
-      	} else {
-      		board2.shapeHit();
-      	}
-      }
-
-      board2.draw();
       checkRowFilled();
       checkGameOver();
     } else {
@@ -205,10 +156,10 @@ function draw() {
      stroke("black");
      text("GAME OVER", canWidth / 2, canHeight / 2);
      resetButton.show();
-   }
+    }
 
-   displayScore();
- }
+    displayScore();
+  }
 }
 
 // Class for left tetris shape
@@ -227,19 +178,19 @@ class Shape {
   }
 }
 
-  class Board {
-    constructor(x, width, height, shape) {
-      this.x = x;
-      this.y = 0;
-      this.width = width;
-      this.height = height;
-      this.shape = shape;
+class Board {
+  constructor(x, width, height, shape) {
+    this.x = x;
+    this.y = 0;
+    this.width = width;
+    this.height = height;
+    this.shape = shape;
 
     // Initialize board and fill with 0
     this.board = [];
     for (var i = 0; i < this.height / blockWidth + 1; i++) {
       this.board[i] = [];
-      for (var j = 0; j < (this.width) / blockWidth; j++) {
+      for (var j = 0; j < this.width / blockWidth; j++) {
         this.board[i][j] = 0;
       }
     }
@@ -250,6 +201,24 @@ class Shape {
   }
 
   draw() {
+    stroke(100);
+    // Draw right board
+    for (var r = 0; r < this.board.length; r++) {
+    	for (var c = 0; c < this.board[0].length; c++) {
+    		if (this.board[r][c] == 0) {
+    			fill("black");
+    			strokeWeight(2);
+    			rect(this.x + (c * blockWidth), r * blockWidth, blockWidth, blockWidth);
+    		} else {
+    			strokeWeight(2);
+    			rect(this.x + (c * blockWidth), r * blockWidth, blockWidth, blockWidth);
+    			drawBlock(this.x + c * blockWidth + 2.5, r * blockWidth + 3, this.board[r][c] - 1);
+    		}
+    	}
+    }
+  }
+
+  drawShape() {
     for (var r = 0; r < this.shape.matrix.length; r++) {
       for (var c = 0; c < this.shape.matrix[0].length; c++) {
         if (this.shape.matrix[r][c] == 1) {
@@ -279,7 +248,6 @@ class Shape {
     return hit;
   }
 
-
   shapeHit() {
     for (var r = 0; r < this.shape.matrix.length; r++) {
       for (var c = 0; c < this.shape.matrix[0].length; c++) {
@@ -291,13 +259,24 @@ class Shape {
     this.shape = new Shape(0, 0, Math.floor(random(0, 7)));
   }
 
-rotatePiece() {
-  var newArray = [];
-  var zeroArray = [];
-  for (var i = 3; i >= 0; i--) {
-    zeroArray.push(0);
-    newArray.push([]);
+  update() {
+    if (frameCount % rate == 0) {
+      if(!this.doesCollide()) {
+        this.shape.fall();
+      } else {
+        this.shapeHit();
+      }
+    }
+    this.drawShape();
   }
+
+  rotatePiece() {
+    var newArray = [];
+    var zeroArray = [];
+    for (var i = 3; i >= 0; i--) {
+      zeroArray.push(0);
+      newArray.push([]);
+    }
 
     // Fill new array with rotated blocks
     for (var i = 3; i >= 0; i--) {
@@ -379,7 +358,7 @@ rotatePiece() {
       }
     }
     this.shape.matrix = newArray;
-}
+  }
 }
 
 function drawBlock(x, y, id) {
@@ -458,8 +437,10 @@ function keyPressed() {
       sendMove(keyCode, player);
     } else if (keyCode == 87) {
       board1.rotatePiece();
+      sendMove(keyCode, player);
+    } else if(keyCode == 32) { // Space
+      sendStart(true, player);
     }
-
   }
 
   //player 2
@@ -498,22 +479,21 @@ function keyPressed() {
       sendMove(keyCode, player);
     } else if (keyCode == UP_ARROW) {
       board2.rotatePiece();
-    } 
+      sendMove(keyCode, player);
+    } else if(keyCode == 32) { // Space
+      sendStart(true, player);
+    }
   }
-    if(keyCode == 32 && player != "unknown") { // Space
-      console.log('go')
-      gameStarted();
-    }}
-  }
+}}
 
-  function gameStarted() {
-    background(0);
-    startGame = true;
-    document.getElementById("logo").style = "display:none;";
-    player1Button.hide();
-    player2Button.hide();
-    pauseButton.show();
-  }
+function gameStarted() {
+  background(0);
+  startGame = true;
+  document.getElementById("logo").style = "display:none;";
+  player1Button.hide();
+  player2Button.hide();
+  pauseButton.show();
+}
 
 
 function displayScore() {
@@ -582,6 +562,9 @@ function checkRowFilled() {
       board2.board.unshift(new_r);
 
       score += 20;
+      if(rate > 6) {
+        rate -= 2;
+      }
     }
   }
 }
@@ -622,13 +605,6 @@ function displayTitleScreen() {
   text("Tetris Company, LLC or Tetris Holding LLC.", canWidth / 2, canHeight - 20);
 }
 
-function newDrawing(data) {
-	console.log("Got: " + data.x + " " + data.y);
-	fill(0,0,255);
-	noStroke();
-	ellipse(data.x, data.y, 20, 20);
-}
-
 function moveOther(data) {
 	console.log('got info');
 	if(data.user == "one") {
@@ -638,7 +614,9 @@ function moveOther(data) {
 			board1.shape.x += 1;	
 		} else if (data.keyPressed == 83) {
 			board1.shape.y += 1;
-		}
+		} else if (data.keyPressed == 87) {
+      board1.rotatePiece();
+    }
 	}
 
 	if(data.user=="two") {
@@ -646,31 +624,12 @@ function moveOther(data) {
 			board2.shape.x -= 1;
 		} else if (data.keyPressed == RIGHT_ARROW) {
 			board2.shape.x += 1;
-			
 		} else if (data.keyPressed == DOWN_ARROW) {
 			board2.shape.y += 1;
-
-		}
+		} else if (data.keyPressed == UP_ARROW) {
+      board2.rotatePiece();
+    }
 	}
-}
-
-function mouseDragged() {
-
-	fill(255);
-	noStroke();
-	ellipse(mouseX,mouseY,20,20);
-	sendMouse(mouseX,mouseY);
-}
-
-function sendMouse(xpos, ypos) {
-
-	var data = {
-		x: xpos,
-		y: ypos
-	};
-
-  // Send that object to the socket
-  socket.emit('mouse',data);
 }
 
 function sendMove(key, player) {
@@ -680,4 +639,26 @@ function sendMove(key, player) {
 	};
 
 	socket.emit('move', data);
+}
+
+function setPause(data) {
+  console.log("Got 'pause' " + data.pause);
+  pause = data.pause;
+}
+
+function sendPause(p) {
+  var data = {
+    pause: p
+  }
+
+  socket.emit('pause', data);
+}
+
+function sendStart(s, player) {
+  var data = {
+    start: s,
+    user: player
+  }
+
+  socket.emit('start', data);
 }

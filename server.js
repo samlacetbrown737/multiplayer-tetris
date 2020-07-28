@@ -24,9 +24,12 @@
 // 	console.log('disconnected');
 // }
 
+var start1;
+var start2;
+
 var express = require('express');
 var app = express();
-var server = app.listen(process.env.PORT || 3000/*56151*/, listen);
+var server = app.listen(process.env.PORT || 56151, listen);
 function listen() {
   var host = server.address().address;
   var port = server.address().port;
@@ -37,23 +40,40 @@ app.use(express.static('public'));
 
 var io = require('socket.io')(server);
 io.sockets.on('connection',
-  // We are given a websocket object in our function
   function (socket) {
-  
     console.log("We have a new client: " + socket.id);
-  
-    // When this user emits, client side: socket.emit('otherevent',some data);
-    socket.on('mouse',
+    
+    socket.on('move',
       function(data) {
-        // Data comes in as whatever was sent, including objects
-        console.log("Received: 'mouse' " + data.x + " " + data.y);
-      
+        console.log("Received: 'move' " + data.user + " " + data.keyPressed);
+
         // Send it to all other clients
-        socket.broadcast.emit('mouse', data);
+        socket.broadcast.emit('move', data);
         
         // This is a way to send to everyone including sender
         // io.sockets.emit('message', "this goes to everyone");
+      }
+    );
 
+    socket.on('pause',
+      function(data) {
+        console.log("Received: 'pause' " + data.pause);
+        socket.broadcast.emit('pause', data);
+      }
+    );
+
+    socket.on('start',
+      function(data) {
+        console.log("Received: 'start' " + data.user);
+        if(data.user == "one") {
+          start1 = data.start;
+        } else {
+          start2 = data.start;
+        }
+
+        if(start1 && start2) {
+          io.sockets.emit('startGame', true);
+        }
       }
     );
     
