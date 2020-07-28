@@ -58,15 +58,17 @@ io.sockets.on('connection',
 	 socket.on('start',
       function(data) {
         console.log("Received: 'start' " + data.user);
-        if(data.user == "one") {
-          start1 = data.start;
-        } else {
-          start2 = data.start;
-        }
+        // if(data.user == "one") {
+        //   start1 = data.start;
+        // } else {
+        //   start2 = data.start;
+        // }
 
-        if(start1 && start2) {
-          io.sockets.emit('startGame', true);
-        }
+        // if(start1 && start2) {
+        //   io.sockets.emit('startGame', true);
+        // }
+
+        io.sockets.emit('startGame', data);
       }
      );
 	
