@@ -13,6 +13,7 @@ TODO
 
 	var socket;
 	var shapes;
+	var press2Play;
 
 	var colors;
 	var colors2;
@@ -47,6 +48,9 @@ TODO
 	var player1Button;
 	var player2Button;
 
+ 	function preload() {
+ 		press2Play = loadFont('font.ttf');
+ 	}
 
 	function setup() {
 		colorMode(RGB, 255, 255, 255, 100);
@@ -117,8 +121,10 @@ TODO
 			socket.on('move', moveOther);
 			socket.on('newPiece', setPiece);
 			socket.on('pause', setPause);
+			// socket.on('start', starting);
 			socket.on('startGame', gameStarted);
 	
+	textFont(press2Play);
 	pauseButton = createButton("Pause");
 	pauseButton.position(board2x - 32.5, 60);
 	pauseButton.mousePressed(function() {pause = !pause;sendPause(pause)});
@@ -673,12 +679,22 @@ function sendPause(p) {
   	socket.emit('pause', data);
 }
 
+// function sendStart(player) {
+// 	var data = {
+// 		player: player
+// 	};
+// 	socket.emit('start', data);
+// }
+
+// function starting(data) {
+//     gameStarted();
+// }
+
 function sendStart(s, player) {
 	var data = {
     	start: s,
    		user: player
 	}
-
 	socket.emit('start', data);
 }
 
