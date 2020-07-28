@@ -1,35 +1,7 @@
-// var express = require('express');
-// var app = express();
-// var server = app.listen(3000);
-
-// app.use(express.static('public'));
-// console.log('socker server running')
-// var socket = require('socket.io');
-// var io = (server);
-// io.sockets.on('connection', newConnection);
-
-// function newConnection(socket) {
-// 	console.log('new connection: ' + socket.id); //note that something has connected and display it's id
-// 	socket.on('mouse', mouseMessage); //if there is a message from this connection called mouse, run mouseMessage
-// 	socket.on('disconnect', disconnected);
-// }
-
-// function mouseMessage(data) {
-// 	console.log(data);
-// 	io.sockets.emit('mouse', data); //sends to everyone, including one that sent the message
-// 	//socket.broadcast.emit('mouse', data);
-// }
-
-// function disconnected() {
-// 	console.log('disconnected');
-// }
-
-var start1;
-var start2;
-
 var express = require('express');
 var app = express();
 var server = app.listen(process.env.PORT || 56151, listen);
+
 function listen() {
   var host = server.address().address;
   var port = server.address().port;
@@ -40,18 +12,23 @@ app.use(express.static('public'));
 
 var io = require('socket.io')(server);
 io.sockets.on('connection',
+  // We are given a websocket object in our function
   function (socket) {
+  
     console.log("We have a new client: " + socket.id);
-    
-    socket.on('move',
-      function(data) {
-        console.log("Received: 'move' " + data.user + " " + data.keyPressed);
+  
 
-        // Send it to all other clients
-        socket.broadcast.emit('move', data);
-        
-        // This is a way to send to everyone including sender
-        // io.sockets.emit('message', "this goes to everyone");
+    socket.on('move',
+    	function(data) {
+    		console.log("Key " + data.keyPressed + " from player " + data.user);
+    		socket.broadcast.emit('move', data);
+    	}
+    );
+
+    socket.on('newPiece',
+      function(data) {
+        console.log("Piece " + data.id);
+        socket.broadcast.emit('newPiece', data);
       }
     );
 
@@ -62,16 +39,20 @@ io.sockets.on('connection',
       }
     );
 
+    var start1 = false;
+    var start2 = false;
     socket.on('start',
       function(data) {
         console.log("Received: 'start' " + data.user);
+        console.log(data.user + " " + start1 + " " + start2);
         if(data.user == "one") {
           start1 = data.start;
-        } else {
+        } else if (data.user == "two") {
           start2 = data.start;
         }
-
+        console.log(start1 + " " + start2);
         if(start1 && start2) {
+          console.log(start1 + " " + start2);
           io.sockets.emit('startGame', true);
         }
       }
@@ -82,3 +63,4 @@ io.sockets.on('connection',
     });
   }
 );
+
