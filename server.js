@@ -27,7 +27,7 @@ io.sockets.on('connection',
 
 	socket.on('newPiece',
 	  function(data) {
-		console.log("Piece " + data.piece.id);
+		console.log("Piece " + data.piece.id + " on " + data.board);
 		socket.broadcast.emit('newPiece', data);
 	  }
 	);
