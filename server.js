@@ -22,9 +22,14 @@ io.sockets.on('connection', function (socket) {
     socket.broadcast.emit('move', data);
   });
 
-  socket.on('newPiece', function(data) {
-    console.log("Piece " + data.id);
-    socket.broadcast.emit('newPiece', data);
+  socket.on('otherShape', function(data) {
+    console.log("Shape " + data.id);
+    socket.broadcast.emit('otherShape', data);
+  });
+
+  socket.on('otherNext', function(data) {
+    console.log("Next shape " + data.id);
+    socket.broadcast.emit('otherNext', data);
   });
 
   socket.on('pause', function(data) {
