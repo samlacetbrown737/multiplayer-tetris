@@ -152,7 +152,7 @@ function reset() {
 }
 
 function draw() {
-    frames++;
+  frames++;
   //if first run, draw start screen
   if(startGame && !pause) {
     background(0);
