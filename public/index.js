@@ -1,11 +1,8 @@
 /* global image, loadImage, strokeWeight, BEVEL, strokeJoin, beginShape, endShape, vertex, textAlign, CENTER, LEFT, RIGHT, UP_ARROW, keyCode, frameCount, createCanvas, stroke, width, height, windowHeight, windowWidth, colorMode, RGB, background, random, textSize, fill, text, noStroke, rect, color, key, LEFT_ARROW, RIGHT_ARROW, DOWN_ARROW*/
 /*
 TODO
-- Restart button
-- Next shape
 - Settings panel
-- Add sound
-- Find better font for splash screen
+- Sound effects
 - Multiplayer on two computers
 	- Add option for four players?
 	*/
@@ -22,19 +19,16 @@ TODO
 
 		var bgm;
 
-		var blockWidth = 20;
-		var widthX = 400;
+		var blockWidth = 30;
+		var widthX = 300;
 		var heightY = 600;
 
 		var board1;
 		var board2;
-		var board2x = widthX + blockWidth + 50;
+		var board2x = widthX + blockWidth * 5;
 
 		var canWidth = board2x + widthX;
 		var canHeight = heightY;
-
-		var currentShape;
-		var currentShape2;
 
 		var score = 0;
 		var startGame = false;
@@ -55,7 +49,7 @@ TODO
  	}
 
  	function loaded() {
-	  bgm.play();
+	  bgm.loop();
 	  bgm.setVolume(0.2);
 	}
 
@@ -126,27 +120,29 @@ TODO
 	board1 = new Board(0, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
 	board2 = new Board(board2x, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
 
+	textFont(press2Play);
 	displayTitleScreen();
 
 	socket = io.connect('http://localhost:56151');
 		socket.on('move', moveOther);
-		socket.on('newPiece', setPiece);
+		//socket.on('newPiece', setPiece);
+		socket.on('newPiece', setOtherNextShape);
 		socket.on('pause', setPause);
-		// socket.on('start', starting);
-		//socket.on('startGame', gameStarted);
 		socket.on('start', gameStarted);
-	
-	textFont(press2Play);
 	
 	//buttons
 		pauseButton = createButton("Pause");
-		pauseButton.position(board2x - 32.5, 60);
+		pauseButton.style("font-family: 'Press Start 2P'; font-size: 16;");
+		pauseButton.position(widthX + 55, 200 + blockWidth * 8);
 		pauseButton.mousePressed(function() {pause = !pause;sendPause(pause)});
 		pauseButton.hide();
 		resetButton = createButton("Restart");
-		resetButton.position(board2x - 35, 80);
-		resetButton.mousePressed(reset());
+		resetButton.style("font-family: 'Press Start 2P'; font-size: 16;");
+		resetButton.position(widthX + 40, 200 + blockWidth * 4);
 		resetButton.hide();
+		resetButton.mousePressed(reset);
+
+		
 }
 
 function reset() {
@@ -156,21 +152,23 @@ function reset() {
 	rate = 30;
 	resetButton.hide();
 	gameIsOver = false;
+	gameStarted();
 }
 
 function draw() {
 	 //if first run, draw start screen
 	 if(startGame && !pause) {
+	 	console.log('starting')
 	 	background(0);
-
 		board1.draw();
 		board2.draw();
-
+		console.log('drawn')
 		if(!gameIsOver) {
 			board1.update();
 			board2.update();
 			checkRowFilled();
-			checkGameOver();
+			board1.checkGameOver();
+			board2.checkGameOver();
 		} else {
 			textAlign(CENTER);
 			textSize(70);
@@ -179,8 +177,7 @@ function draw() {
 			text("GAME OVER", canWidth / 2, canHeight / 2);
 			resetButton.show();
 		}
-
-		displayScore();
+		displayMiddle();
 	}
 }
 
@@ -207,6 +204,7 @@ class Board {
 		this.width = width;
 		this.height = height;
 		this.shape = shape;
+		this.nextShape = new Shape(0, 0, Math.floor(random(0, 7)));
 
 		// Initialize board and fill with 0
 		this.board = [];
@@ -233,34 +231,42 @@ class Board {
 		}
 	}
 
+	setNextShape(piece) {
+		if(player == "one") {
+			this.nextShape = piece;
+			//sendPiece(piece.id, 1);
+			sendPiece(this.nextShape, 1);
+			console.log('Next 1: ' + this.nextShape.id);
+			} else {
+				//sendPiece(piece.id, 2);
+		    	sendPiece(this.nextShape, 2);
+			 	console.log('Next 2: ' + this.nextShape.id);
+		}
+    }
+
 	draw() {
-		stroke(100);
-    	// Draw right board
-    	for (var r = 0; r < this.board.length; r++) {
-    		for (var c = 0; c < this.board[0].length; c++) {
-    			if (this.board[r][c] == 0) {
-    				fill("black");
-    				strokeWeight(2);
-    				rect(this.x + (c * blockWidth), r * blockWidth, blockWidth, blockWidth);
-    			} else {
-    				strokeWeight(2);
-    				rect(this.x + (c * blockWidth), r * blockWidth, blockWidth, blockWidth);
-    				drawBlock(this.x + c * blockWidth + 2.5, r * blockWidth + 3, this.board[r][c] - 1);
-    			}
-    		}
-    	}
+	    console.log('draw')
+	    for (var r = 0; r < this.board.length; r++) {
+	    	for (var c = 0; c < this.board[0].length; c++) {
+		        fill("black");
+		        strokeWeight(2);
+		        stroke(100);
+		        rect(this.x + c * blockWidth, r * blockWidth, blockWidth, blockWidth);
+		    	if (this.board[r][c] != 0) {
+		    		drawBlock(this.x + c * blockWidth, r * blockWidth, this.board[r][c] - 1);
+		   		}
+		    }
+		}
 	}
 
 	drawShape() {
+		console.log(this.shape)
 		for (var r = 0; r < this.shape.matrix.length; r++) {
 			for (var c = 0; c < this.shape.matrix[0].length; c++) {
 				if (this.shape.matrix[r][c] == 1) {
-					// Draw block
-					drawBlock(
-						this.x + (this.shape.x + c) * blockWidth + 2.5,
-						(this.shape.y + r) * blockWidth + 3,
-						this.shape.id
-						);
+          drawBlock(this.x + (this.shape.x + c) * blockWidth,
+          (this.shape.y + r) * blockWidth,
+          this.shape.id);
 				}
 			}
 		}
@@ -272,7 +278,9 @@ class Board {
 			for (var c = 0; c < this.shape.matrix[0].length; c++) {
 				if (this.shape.matrix[r][c] != 0) {
 					// Check bottom
-					if (this.board[r + this.shape.y + 1][c + this.shape.x] != 0) {
+					console.log("r: " + r + this.shape.y + 1)
+					console.log("c: " + c + this.shape.x);
+					if (this.board[r + this.shape.y+1][c + this.shape.x] != 0) {
 						hit = true;
 					}
 				}
@@ -290,10 +298,12 @@ class Board {
 				}
 			}
 		}
-		this.shape = new Shape(0, 0, Math.floor(random(0, 7)));
+		//this.shape = new Shape(0, 0, Math.floor(random(0, 7)));
+		this.shape = this.nextShape;
 	}
 
 	update() {
+		console.log('start update')
 		if(frameCount % rate == 0) {
 			if(!this.doesCollide()) {
 				if(player == "one") {
@@ -302,10 +312,18 @@ class Board {
 					board2.shape.fall();
 				}
 			} else {
-				this.shapeHit();
+				var piece = new Shape(0, 0, Math.floor(random(0,7)));
+				if(player == "one") {
+					this.shapeHit();
+					board1.setNextShape(piece);
+				} else if(player == "two") {
+					this.shapeHit();
+					board2.setNextShape(piece);
+				}
 			}
 		}
 		this.drawShape();
+		console.log('end update')
 	}
 
 	rotatePiece() {
@@ -397,179 +415,128 @@ class Board {
 		}
 		this.shape.matrix = newArray;
 	}
+
+ checkGameOver() {
+    for (var j = 0; j < this.board[0].length; j++) {
+      if (this.board[0][j] != 0) {
+        gameIsOver = true;
+        break;
+      }
+    }
+  }
 }
 
 function drawBlock(x, y, id) {
-	fill(colors[id]);
-	rect(x, y, blockWidth - 0.25 * blockWidth, blockWidth - 0.25 * blockWidth);
-	strokeWeight((0.25 * blockWidth) / 2);
-	strokeJoin(BEVEL);
-
-	stroke(colors2[id]);
-	beginShape();
-	vertex(x, y);
-	vertex(x + blockWidth - 0.25 * blockWidth, y);
-	endShape();
-
-	stroke(colors3[id]);
-	beginShape();
-	vertex(x + blockWidth - 0.25 * blockWidth, y);
-	vertex(
-		x + blockWidth - 0.25 * blockWidth,
-		y + blockWidth - 0.25 * blockWidth
-		);
-	endShape();
-
-	stroke(colors4[id]);
-	beginShape();
-	vertex(
-		x + blockWidth - 0.25 * blockWidth,
-		y + blockWidth - 0.25 * blockWidth
-		);
-	vertex(x, y + blockWidth - 0.25 * blockWidth);
-	endShape();
-
-	stroke(colors3[id]);
-	beginShape();
-	vertex(x, y + blockWidth - 0.25 * blockWidth);
-	vertex(x, y);
-	endShape();
-	stroke(100);
+  	noStroke();
+  	fill(colors2[id]);
+  	triangle(x, y, x + blockWidth / 2, y + blockWidth / 2, x + blockWidth, y);
+  	fill(colors3[id]);
+  	triangle(x + blockWidth, y + blockWidth, x + blockWidth / 2, y + blockWidth / 2, x + blockWidth, y);
+  	fill(colors4[id]);
+  	triangle(x, y + blockWidth, x + blockWidth, y + blockWidth, x + blockWidth / 2, y + blockWidth / 2);
+  	fill(colors3[id]);
+  	triangle(x, y, x, y + blockWidth, x + blockWidth / 2, y + blockWidth / 2);
+  	fill(colors[id]);
+	rect(x + blockWidth / 8, y + blockWidth / 8, blockWidth * 3 / 4, blockWidth * 3 / 4);
 }
 
 function keyPressed() {
 	if(!pause) {
-	//player 1
+    var board;
 		if(player == "one") {
-			var hit = false;
-			if (keyCode == 65) {
-				for (var r = 0; r < board1.shape.matrix.length; r++) {
-					for (var c = 0; c < board1.shape.matrix[0].length; c++) {
-						if (board1.shape.matrix[r][c] != 0) {
-							if (board1.board[r + board1.shape.y][c + board1.shape.x - 1] != 0) {
-								hit = true;
-							}
-						}
-					}
-				}
-				if (!hit) {
-					board1.shape.x -= 1;
-					sendMove(keyCode, player);
-				}
-			} else if (keyCode == 68) {
-				for (var r = 0; r < board1.shape.matrix.length; r++) {
-					for (var c = 0; c < board1.shape.matrix[0].length; c++) {
-						if (board1.shape.matrix[r][c] != 0) {
-							if (board1.board[r + board1.shape.y][c + board1.shape.x + 1] != 0) {
-								hit = true;
-							}
-						}
-					}
-				}
-				if (!hit) {
-					board1.shape.x += 1;
-					sendMove(keyCode, player);
-				}
-			} else if (keyCode == 83 && !board1.doesCollide()) {
-				board1.shape.y += 1;
-				sendMove(keyCode, player);
-			} else if (keyCode == 87) {
-				board1.rotatePiece();
-				sendMove(keyCode, player);
-			} else if(keyCode == 32) {
-				sendStart(true, player);
-			}
-		}
-
-			//player 2
-		if(player=="two") {
-			var hit2 = false;
-			if (keyCode == LEFT_ARROW) {
-				for (var r = 0; r < board2.shape.matrix.length; r++) {
-					for (var c = 0; c < board2.shape.matrix[0].length; c++) {
-						if (board2.shape.matrix[r][c] != 0) {
-							if (board2.board[r + board1.shape.y][c + board2.shape.x - 1] != 0) {
-								hit2 = true;
-							}
-						}
-					}
-				}
-				if (!hit2) {
-					board2.shape.x -= 1;
-					sendMove(keyCode, player);
-				}
-			} else if (keyCode == RIGHT_ARROW) {
-			for (var r = 0; r < board2.shape.matrix.length; r++) {
-				for (var c = 0; c < board2.shape.matrix[0].length; c++) {
-					if (board2.shape.matrix[r][c] != 0) {
-						if (board2.board[r + board1.shape.y][c + board2.shape.x + 1] != 0) {
-							hit2 = true;
-						}
-					}
-				}
-			}
-			if (!hit2) {
-				board2.shape.x += 1;
-				sendMove(keyCode, player);
-			}
-		} else if (keyCode == DOWN_ARROW && !board2.doesCollide()) {
-			board2.shape.y += 1;
-			sendMove(keyCode, player);
-		} else if (keyCode == UP_ARROW) {
-			board2.rotatePiece();
-		} else if(keyCode == 32) {
-			sendStart(true, player);
-		}
-	}
-	// if(keyCode == 32 && player != "unknown") { // Space
-	// 	console.log('go')
-	// 	gameStarted();
-	// }}
-	}
+      board = board1;
+		} else if(player == "two") {
+      board = board2;
+    }
+    var hit = false;
+    if (keyCode == LEFT_ARROW || keyCode == 68) {
+      for (var r = 0; r < board.shape.matrix.length; r++) {
+        for (var c = 0; c < board.shape.matrix[0].length; c++) {
+          if (board.shape.matrix[r][c] != 0) {
+            if (board.board[r + board.shape.y][c + board.shape.x - 1] != 0) {
+              hit = true;
+            }
+          }
+        }
+      }
+      if (!hit) {
+        board.shape.x -= 1;
+        sendMove(keyCode, player);
+      }
+    } else if (keyCode == RIGHT_ARROW || keyCode == 65) {
+      for (var r = 0; r < board.shape.matrix.length; r++) {
+        for (var c = 0; c < board.shape.matrix[0].length; c++) {
+          if (board.shape.matrix[r][c] != 0) {
+            if (board.board[r + board.shape.y][c + board.shape.x + 1] != 0) {
+              hit = true;
+            }
+          }
+        }
+      }
+      if (!hit) {
+        board.shape.x += 1;
+        sendMove(keyCode, player);
+      }
+    } else if ((keyCode == DOWN_ARROW || keyCode == 83) && !board.doesCollide()) {
+      board.shape.y += 1;
+      sendMove(keyCode, player);
+    } else if (keyCode == UP_ARROW || keyCode == 87) {
+      board.rotatePiece();
+    } else if(keyCode == 32) {
+      sendStart(true, player);
+    }
+  }
 }
 
 function gameStarted(data) {
+	console.log('game started')
 	background(0);
+	var piece = new Shape(0, 0, Math.floor(random(0,7)));
 	if(player== "one") {
 		console.log('creating')
-		board1.createShape();
+		board1.setNextShape(piece);
 	} else if (player=="two") {
 		console.log('creating')
-		board2.createShape();
+		board2.setNextShape(piece);
 	}
 	document.getElementById("logo").style = "display:none;";
 	player1Button.hide();
 	player2Button.hide();
 	pauseButton.show();
+	console.log('end game stated')
+	startGame = true;
 }
 
-function displayScore() {
+function displayMiddle() {
 	textSize(16);
-	fill(255);
-	//write score in the center of the board
-	textAlign(CENTER);
-	stroke("black");
-	text(`Score: ${score}`, canWidth / 2, 20);
+  fill(255);
+  noStroke();
+  textAlign(CENTER);
+	// Score	
+  text("Score", canWidth / 2, 40);
+  text(`${score}`, canWidth / 2, 60);
+  // Player 1 next shape
+  text("Next 1", canWidth / 2, 100);
+  drawNextShape(widthX + blockWidth / 2, 120, board1.nextShape);
+  // Player 2 next shape
+  fill(255);
+  noStroke();
+  text("Next 2", canWidth / 2, 160 + blockWidth * 4);
+  drawNextShape(widthX + blockWidth / 2, 180 + blockWidth * 4, board2.nextShape);
 }
 
-// If top row of either board has blocks, game over.
-//Should this be if they go into the row above the visible board instead?
-function checkGameOver() {
-	// Check board
-	for (var j = 0; j < board1.board[0].length; j++) {
-		if (board1.board[0][j] != 0) {
-			gameIsOver = true;
-			break;
-		}
-	}
-
-	// Check board2
-	for (var j = 0; j < board2.board[0].length; j++) {
-		if (board2.board[0][j] != 0) {
-			gameIsOver = true;
-			break;
-		}
-	}
+function drawNextShape(x, y, shape) {
+  for (var r = 0; r < 4; r++) {
+    for (var c = 0; c < 4; c++) {
+      fill("black");
+      strokeWeight(2);
+      stroke(100);
+      rect(x + c * blockWidth, y + r * blockWidth, blockWidth, blockWidth);
+      if (shape.matrix[r][c] == 1) {
+        drawBlock(x + c * blockWidth, y + r * blockWidth, shape.id);
+      }
+    }
+  }
 }
 
 //seems to only work if row filled is first row? or maybe if they fill around the same time? idk, buggy
@@ -616,64 +583,50 @@ function checkRowFilled() {
 }
 
 function displayTitleScreen() {
-	textFont(press2Play);
-	textSize(12);
 	logo = new Image(450, 236);
 	logo.src = "Tetris Multiplayer.png";
-	logo.style = `position:absolute; top:70px; left:230px;`;
+	logo.style = `position:absolute; top:70px; left:${canWidth / 2 - 225 + 20}px;`;
 	logo.id = "logo";
 	document.body.appendChild(logo);
 	textAlign(CENTER);
 	fill(255);
-	text("A row must be filled across both boards to cancel out", canWidth / 2, 370);
-
-	textAlign(LEFT);
-	text("Player 1:", 20, 420);
-	text("WASD to move, W to rotate", 100, 440);
+    textSize(16);
+    text("Choose player", canWidth / 2, 360);
+	  
 	player1Button = createButton("Player 1");
-	player1Button.position(85, 410);
-	player1Button.mousePressed(function() {player="one";});
-
-	textAlign(RIGHT);
-	text("Player 2:", canWidth - 20, 420);
-	text("Arrow keys to move, up arrow to rotate", canWidth - 100, 440);
+	player1Button.style("font-family: 'Press Start 2P'; font-size: 16;");
+	player1Button.position(canWidth / 2 - player1Button.size().width - 80, 370);  
+	player1Button.mousePressed(function() {player = "one"; console.log(player)});
+	  
 	player2Button = createButton("Player 2");
-	player2Button.position(770, 410);
-	player2Button.mousePressed(function() {player="two";});
+	player2Button.style("font-family: 'Press Start 2P'; font-size: 16;");
+	player2Button.position(canWidth / 2 + 55, 370);  
+	player2Button.mousePressed(function() {player = "two"; console.log(player)});
 
-	textAlign(CENTER);
-	text("Chose player, then", canWidth/2, 480);
-	text("press space to start", canWidth / 2, 500);
-
+	text("Press space to start", canWidth / 2, 435);
+	text("A row must be filled across both", canWidth / 2, 475);
+	text("boards to cancel out", canWidth / 2, 495);
+	  
 	textSize(7);
-	text("Disclaimer: We are not affiliated, associated, authorized, endorsed by, or in any way officially connected with the", canWidth / 2, canHeight - 40);
-	text("Tetris Company, LLC or Tetris Holding LLC.", canWidth / 2, canHeight - 20);
+	text("Disclaimer: We are not affiliated, associated, authorized, endorsed by, or in any way", canWidth / 2, canHeight - 40);
+	text("officially connected with the Tetris Company, LLC or Tetris Holding LLC.", canWidth / 2, canHeight - 30);
 }
 
 function moveOther(data) {
-	console.log('got info');
+	var board;
 	if(data.user == "one") {
-		if (data.keyPressed == 65) {
-			board1.shape.x -= 1;
-		} else if (data.keyPressed == 68) {
-			board1.shape.x += 1;  
-		} else if (data.keyPressed == 83) {
-			board1.shape.y += 1;
-		} else if (data.keyPressed == 87) {
-			board1.rotatePiece();
-		}
+		board = board1;
+	} else if(data.user=="two") {
+		board = board2;
 	}
-
-	if(data.user=="two") {
-		if (data.keyPressed == LEFT_ARROW) {
-			board2.shape.x -= 1;
-		} else if (data.keyPressed == RIGHT_ARROW) {
-			board2.shape.x += 1;
-		} else if (data.keyPressed == DOWN_ARROW) {
-			board2.shape.y += 1;
-		} else if (data.keyPresssed == UP_ARROW) {
-			board2.rotatePiece();
-		}
+	if (data.keyPressed == 65 || data.keyPressed == LEFT_ARROW) {
+		board.shape.x -= 1;
+	} else if (data.keyPressed == 68 || data.keyPressed == RIGHT_ARROW) {
+		board.shape.x += 1;  
+	} else if (data.keyPressed == 83 || data.keyPressed == DOWN_ARROW) {
+		board.shape.y += 1;
+	} else if (data.keyPressed == 87 || data.keyPresssed == UP_ARROW) {
+		board.rotatePiece();
 	}
 }
 
@@ -687,7 +640,6 @@ function sendMove(key, player) {
 }
 
 function setPause(data) {
-	console.log("Got 'pause' " + data.pause);
 	pause = data.pause;
 }
 
@@ -705,6 +657,13 @@ function sendStart(s, player) {
    		player: player
 	}
 	socket.emit('start', data);
+	fill(0);
+	noStroke();
+	rect(0, 415, canWidth, 20);
+	textAlign(CENTER);
+	fill(255, 0, 0);
+	textSize(16);
+	text("Waiting for other player...", canWidth / 2, 435);
 }
 
 function sendPiece(piece, board) {
@@ -720,19 +679,28 @@ function sendPiece(piece, board) {
 	socket.emit('newPiece', data);
 }
 
-function setPiece(data) {
-	if(data.board == 1) {
-			console.log('setting 1')
-			board1.shape = data.piece;
-			console.log(board1.shape.id);
-	} else if(data.board == 2) {
-			console.log('setting 2')
-			board2.shape = data.piece;
-			console.log(board2.shape.id);
-	}
-	if(!startGame) {
-		console.log("piece 1 " + board1.shape.id);
-		console.log("piece 2 " + board2.shape.id);
-		startGame = true;
-	}
+
+function setOtherNextShape(data) {
+  if(data.board ==  1) {
+    board1.nextShape = data.piece;
+  } else if(data.board == 2) {
+    board2.nextShape = data.piece;
+  }
 }
+
+// function setPiece(data) {
+// 	if(data.board == 1) {
+// 			console.log('setting 1')
+// 			board1.shape = data.piece;
+// 			console.log(board1.shape.id);
+// 	} else if(data.board == 2) {
+// 			console.log('setting 2')
+// 			board2.shape = data.piece;
+// 			console.log(board2.shape.id);
+// 	}
+// 	if(!startGame) {
+// 		console.log("piece 1 " + board1.shape.id);
+// 		console.log("piece 2 " + board2.shape.id);
+// 		startGame = true;
+// 	}
+// }
