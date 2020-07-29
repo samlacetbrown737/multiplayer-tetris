@@ -32,6 +32,7 @@ var score = 0;
 var startGame = false;
 var gameIsOver = false;
 var rate = 30;
+var frames = 0;
 
 var pause = false;
 var pauseButton;
@@ -151,6 +152,7 @@ function reset() {
 }
 
 function draw() {
+    frames++;
   //if first run, draw start screen
   if(startGame && !pause) {
     background(0);
@@ -160,7 +162,7 @@ function draw() {
 
     if(!gameIsOver) {
       // Update board1
-      if(frameCount % rate == 0) {
+      if(frames % rate == 0) {
         if(!board1.doesCollide()) {
           board1.shape.fall();
         } else {
@@ -173,7 +175,7 @@ function draw() {
       board1.drawShape();
 
       // Update board2
-      if(frameCount % rate == 0) {
+      if(frames % rate == 0) {
         if(!board2.doesCollide()) {
           board2.shape.fall();
         } else {
@@ -306,7 +308,7 @@ class Board {
 	}
 
 	update() {
-		if(frameCount % rate == 0) {
+		if(frames % rate == 0) {
 			if(!this.doesCollide()) {
 				this.shape.fall();
 			} else {
@@ -511,6 +513,7 @@ function gameStarted() {
     board2.setNextShape(Math.floor(random(0, 7)));
   }*/
   
+  frames = 0;
   startGame = true;
   document.getElementById("logo").style = "display:none;";
   player1Button.hide();
