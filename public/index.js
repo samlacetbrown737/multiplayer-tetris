@@ -121,7 +121,8 @@ function setup() {
 
   socket = io.connect('http://localhost:56151');
   socket.on('move', moveOther);
-  socket.on('newPiece', setOtherNextShape);
+  socket.on('otherShape', setOtherShape);
+  socket.on('otherNext', setOtherNextShape);
   socket.on('pause', setPause);
   socket.on('start', gameStarted);
 	
@@ -242,10 +243,10 @@ class Board {
   setNextShape(id) {
     this.nextShape = new Shape(0, 0, id);
     if(player == "one") {
-      sendPiece(this.nextShape.id, 1);
+      sendNext(this.nextShape.id, 1);
       console.log('Next 1: ' + this.nextShape.id);
     } else {
-      sendPiece(this.nextShape.id, 2);
+      sendNext(this.nextShape.id, 2);
       console.log('Next 2: ' + this.nextShape.id);
     }
   }
@@ -301,6 +302,7 @@ class Board {
 			}
 		}
     this.shape = this.nextShape;
+    console.log(player + this.shape.id);
 	}
 
 	update() {
@@ -477,7 +479,7 @@ function keyPressed() {
   }
 }
 
-async function gameStarted() {
+function gameStarted() {
   background(0);
   /* if(player == "unknown") {
     if(data.user == "one") {
@@ -486,6 +488,11 @@ async function gameStarted() {
       player = "one";
     }
   }*/
+  if(player == "one") {
+    sendShape(board1.shape.id, 1);
+  } else {
+    sendShape(board2.shape.id, 2);
+  }
 
   if(player == "one") {
     board1.setNextShape(Math.floor(random(0, 7)));
@@ -670,6 +677,22 @@ function sendStart(s, player) {
   text("Waiting for other player...", canWidth / 2, 435);
 }
 
+function setOtherShape(data) {
+  if(data.board == 1) {
+    board1.shape = new Shape(0, 0, data.id);
+  } else {
+    board2.shape = new Shape(0, 0, data.id);
+  }
+}
+
+function sendShape(id, board) {
+  var data = {
+    id: id,
+    board: board
+  }
+  socket.emit('otherShape', data);
+}
+
 function setOtherNextShape(data) {
   if(data.board == 1) {
     board1.nextShape = new Shape(0, 0, data.id);
@@ -678,10 +701,10 @@ function setOtherNextShape(data) {
   }
 }
 
-function sendPiece(id, board) {
+function sendNext(id, board) {
   var data = {
     id: id,
     board: board
   }
-  socket.emit('newPiece', data);
+  socket.emit('otherNext', data);
 }
