@@ -1,7 +1,8 @@
 var express = require('express');
 var app = express();
 var server = app.listen(process.env.PORT || 56151, listen);
-var start1, start2;
+var start1 = false;
+var start2 = false;
 
 function listen() {
   var host = server.address().address;
@@ -26,7 +27,7 @@ io.sockets.on('connection',
 
 	socket.on('newPiece',
 	  function(data) {
-		console.log("Piece " + data.id);
+		console.log("Piece " + data.piece.id);
 		socket.broadcast.emit('newPiece', data);
 	  }
 	);
@@ -52,28 +53,11 @@ io.sockets.on('connection',
     	}
 	  }
 	);
-
-	// var start1 = false;
-	// var start2 = false;
-	//  socket.on('start',
- //      function(data) {
- //        console.log("Received: 'start' " + data.user);
- //        // if(data.user == "one") {
- //        //   start1 = data.start;
- //        // } else {
- //        //   start2 = data.start;
- //        // }
-
- //        // if(start1 && start2) {
- //        //   io.sockets.emit('startGame', true);
- //        // }
-
- //        io.sockets.emit('startGame', data);
- //      }
- //     );
 	
 	socket.on('disconnect', function() {
 	  console.log("Client has disconnected");
+	  start1 = false;
+	  start2 = false;
 	});
   }
 );
