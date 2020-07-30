@@ -118,6 +118,7 @@ function setup() {
   socket.on('board', setOtherBoard);
   socket.on('pause', setPause);
   socket.on('start', gameStarted);
+  socket.on('reset', reset);
 
   textFont(press2Play);
   displayTitleScreen();  
@@ -131,20 +132,12 @@ function setup() {
   resetButton = createButton("Restart");
   resetButton.style("font-family: 'Press Start 2P'; font-size: 16;");
 	resetButton.position(widthX + 40, 200 + blockWidth * 4);
-	resetButton.mousePressed(reset);
+	resetButton.mousePressed(sendReset);
 	resetButton.hide();
 }
 
 function reset() {
-	score = 0;
-	if(player == "one") {
-    board1 = new Board(0, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
-    sendBoard(board1.x, board1.width, board1.height, board1.shape.x, board1.shape.y, board1.shape.id, board1.nextShape.x, board1.nextShape.y, board1.nextShape.id, board1.board, 1);
-  } else if(player == "two") {
-    board2 = new Board(board2x, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
-    sendBoard(board2.x, board2.width, board2.height, board2.shape.x, board2.shape.y, board2.shape.id, board2.nextShape.x, board2.nextShape.y, board2.nextShape.id, board2.board, 2);
-  }
-
+  score = 0;
 	rate = 30;
   resetButton.hide();
   gameIsOver = false;
@@ -153,52 +146,50 @@ function reset() {
 }
 
 function draw() { if(board1 != undefined && board2 != undefined) {
-  console.log("start draw");
   frames++;
   //if first run, draw start screen
-  if(startGame && !pause) {
+  if(startGame && !pause && !gameIsOver) {
     background(0);
 
     board1.draw();
     board2.draw();
 
-    if(!gameIsOver) {
-      if(player == "one") {
-        if(frames % rate == 0) {
-          if(!board1.doesCollide()) {
-            board1.shape.fall();
-          } else {
-            board1.shapeHit();
-          }
+    if(player == "one") {
+      if(frames % rate == 0) {
+        if(!board1.doesCollide()) {
+          board1.shape.fall();
+        } else {
+          board1.shapeHit();
         }
-        sendBoard(board1.x, board1.width, board1.height, board1.shape.x, board1.shape.y, board1.shape.id, board1.nextShape.x, board1.nextShape.y, board1.nextShape.id, board1.board, 1);
-      } else {
-        if(frames % rate == 0) {
-          if(!board2.doesCollide()) {
-            board2.shape.fall();
-          } else {
-            board2.shapeHit();
-          }
-        }
-        sendBoard(board2.x, board2.width, board2.height, board2.shape.x, board2.shape.y, board2.shape.id, board2.nextShape.x, board2.nextShape.y, board2.nextShape.id, board2.board, 2);
       }
-      
-      board1.drawShape();
-      board2.drawShape();
-
-      checkRowFilled();
-      board1.checkGameOver();
-      board2.checkGameOver();
+      sendBoard(board1.x, board1.width, board1.height, board1.shape.x, board1.shape.y, board1.shape.id, board1.shape.matrix, board1.nextShape.x, board1.nextShape.y, board1.nextShape.id, board1.board, 1);
     } else {
-      textAlign(CENTER);
-      textSize(70);
-      fill(255);
-      stroke("black");
-      text("GAME OVER", canWidth / 2, canHeight / 2);
-      resetButton.show();
+      if(frames % rate == 0) {
+        if(!board2.doesCollide()) {
+          board2.shape.fall();
+        } else {
+          board2.shapeHit();
+        }
+      }
+      sendBoard(board2.x, board2.width, board2.height, board2.shape.x, board2.shape.y, board2.shape.id, board2.shape.matrix, board2.nextShape.x, board2.nextShape.y, board2.nextShape.id, board2.board, 2);
     }
+    
+    board1.drawShape();
+    board2.drawShape();
+
+    checkRowFilled();
+
+    board1.checkGameOver();
+    board2.checkGameOver();
 
     displayMiddle();
+  } else {
+    textAlign(CENTER);
+    textSize(70);
+    fill(255);
+    stroke("black");
+    text("GAME OVER", canWidth / 2, canHeight / 2);
+    resetButton.show();
   }
 }}
 
@@ -213,9 +204,9 @@ class Shape {
 		this.matrix = shapes[id];
   }
   
-  setter() {
+  setter(matrix) {
     this.color = colors[this.id];
-		this.matrix = shapes[this.id];
+		this.matrix = matrix;
   }
 
 	fall() {
@@ -246,11 +237,11 @@ class Board {
     }
   }
 
-  setter(nx, ny, nid, board) {
-    this.shape.setter();
+  setter(smatrix, nx, ny, nid, board) {
+    this.shape.setter(smatrix);
 
     this.nextShape = new Shape(nx, ny, nid);
-    this.nextShape.setter();
+    this.nextShape.setter(shapes[nid]);
 
     this.board = board;
   }
@@ -308,9 +299,9 @@ class Board {
     this.shape = this.nextShape;
     this.nextShape = new Shape(0, 0, Math.floor(random(0, 7)));
     if(player == "one") {
-      sendBoard(this.x, this.width, this.height, this.shape.x, this.shape.y, this.shape.id, this.nextShape.x, this.nextShape.y, this.nextShape.id, this.board, 1);
+      sendBoard(this.x, this.width, this.height, this.shape.x, this.shape.y, this.shape.id, this.shape.matrix, this.nextShape.x, this.nextShape.y, this.nextShape.id, this.board, 1);
     } else if(player == "two") {
-      sendBoard(this.x, this.width, this.height, this.shape.x, this.shape.y, this.shape.id, this.nextShape.x, this.nextShape.y, this.nextShape.id, this.board, 2);
+      sendBoard(this.x, this.width, this.height, this.shape.x, this.shape.y, this.shape.id, this.shape.matrix, this.nextShape.x, this.nextShape.y, this.nextShape.id, this.board, 2);
     }
     console.log(player + this.shape.id);
 	}
@@ -458,7 +449,7 @@ function keyPressed() {
       boardNum = 2;
     }
     var hit = false;
-    if(keyCode == LEFT_ARROW) {
+    if(keyCode == LEFT_ARROW || keyCode == 65) {
       for(var r = 0; r < board.shape.matrix.length; r++) {
         for(var c = 0; c < board.shape.matrix[0].length; c++) {
           if(board.shape.matrix[r][c] != 0) {
@@ -470,9 +461,9 @@ function keyPressed() {
       }
       if(!hit) {
         board.shape.x -= 1;
-        sendBoard(board.x, board.width, board.height, board.shape.x, board.shape.y, board.shape.id, board.nextShape.x, board.nextShape.y, board.nextShape.id, board.board, boardNum);
+        sendBoard(board.x, board.width, board.height, board.shape.x, board.shape.y, board.shape.id, board.shape.matrix, board.nextShape.x, board.nextShape.y, board.nextShape.id, board.board, boardNum);
       }
-    } else if(keyCode == RIGHT_ARROW) {
+    } else if(keyCode == RIGHT_ARROW || keyCode == 68) {
       for(var r = 0; r < board.shape.matrix.length; r++) {
         for(var c = 0; c < board.shape.matrix[0].length; c++) {
           if(board.shape.matrix[r][c] != 0) {
@@ -484,16 +475,16 @@ function keyPressed() {
       }
       if(!hit) {
         board.shape.x += 1;
-        sendBoard(board.x, board.width, board.height, board.shape.x, board.shape.y, board.shape.id, board.nextShape.x, board.nextShape.y, board.nextShape.id, board.board, boardNum);
+        sendBoard(board.x, board.width, board.height, board.shape.x, board.shape.y, board.shape.id, board.shape.matrix, board.nextShape.x, board.nextShape.y, board.nextShape.id, board.board, boardNum);
       }
-    } else if(keyCode == DOWN_ARROW && !board.doesCollide()) {
+    } else if((keyCode == DOWN_ARROW || keyCode == 83) && !board.doesCollide()) {
       board.shape.y += 1;
-      sendBoard(board.x, board.width, board.height, board.shape.x, board.shape.y, board.shape.id, board.nextShape.x, board.nextShape.y, board.nextShape.id, board.board, boardNum);
-    } else if(keyCode == UP_ARROW) {
+      sendBoard(board.x, board.width, board.height, board.shape.x, board.shape.y, board.shape.id, board.shape.matrix, board.nextShape.x, board.nextShape.y, board.nextShape.id, board.board, boardNum);
+    } else if(keyCode == UP_ARROW || keyCode == 87) {
       board.rotatePiece();
-      sendBoard(board.x, board.width, board.height, board.shape.x, board.shape.y, board.shape.id, board.nextShape.x, board.nextShape.y, board.nextShape.id, board.board, boardNum);
+      sendBoard(board.x, board.width, board.height, board.shape.x, board.shape.y, board.shape.id, board.shape.matrix, board.nextShape.x, board.nextShape.y, board.nextShape.id, board.board, boardNum);
     } else if(keyCode == 32) {
-      sendStart(true, player);
+      sendStart();
     }
   }
 }
@@ -510,10 +501,10 @@ function gameStarted() {
 
   if(player == "one") {
     board1 = new Board(0, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
-    sendBoard(board1.x, board1.width, board1.height, board1.shape.x, board1.shape.y, board1.shape.id, board1.nextShape.x, board1.nextShape.y, board1.nextShape.id, board1.board, 1);
+    sendBoard(board1.x, board1.width, board1.height, board1.shape.x, board1.shape.y, board1.shape.id, board1.shape.matrix, board1.nextShape.x, board1.nextShape.y, board1.nextShape.id, board1.board, 1);
   } else if(player == "two"){
     board2 = new Board(board2x, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
-    sendBoard(board2.x, board2.width, board2.height, board2.shape.x, board2.shape.y, board2.shape.id, board2.nextShape.x, board2.nextShape.y, board2.nextShape.id, board2.board, 2);
+    sendBoard(board2.x, board2.width, board2.height, board2.shape.x, board2.shape.y, board2.shape.id, board2.shape.matrix, board2.nextShape.x, board2.nextShape.y, board2.nextShape.id, board2.board, 2);
   }
   
   frames = rate / 2;
@@ -613,12 +604,12 @@ function displayTitleScreen() {
   player1Button = createButton("Player 1");
   player1Button.style("font-family: 'Press Start 2P'; font-size: 16;");
   player1Button.position(canWidth / 2 - player1Button.size().width - 80, 370);  
-  player1Button.mousePressed(function() {player = "one"; console.log(player)});
+  player1Button.mousePressed(function() {player = "one"; console.log(player);});
   
   player2Button = createButton("Player 2");
   player2Button.style("font-family: 'Press Start 2P'; font-size: 16;");
   player2Button.position(canWidth / 2 + 55, 370);  
-  player2Button.mousePressed(function() {player = "two"; console.log(player)});
+  player2Button.mousePressed(function() {player = "two"; console.log(player);});
 
   text("Press space to start", canWidth / 2, 435);
   text("A row must be filled across both", canWidth / 2, 475);
@@ -632,16 +623,16 @@ function displayTitleScreen() {
 function setOtherBoard(data) {
   if(data.boardNum == 1) {
     board1 = new Board(data.x, data.width, data.height, new Shape(data.sx, data.sy, data.sid));
-    board1.setter(data.nx, data.ny, data.nid, data.board);
+    board1.setter(data.smatrix, data.nx, data.ny, data.nid, data.board);
     console.log(board1);
   } else {
     board2 = new Board(data.x, data.width, data.height, new Shape(data.sx, data.sy, data.sid));
-    board2.setter(data.nx, data.ny, data.nid, data.board);
+    board2.setter(data.smatrix, data.nx, data.ny, data.nid, data.board);
     console.log(board2);
   }
 }
 
-function sendBoard(x, width, height, sx, sy, sid, nx, ny, nid, board, boardNum) {
+function sendBoard(x, width, height, sx, sy, sid, smatrix, nx, ny, nid, board, boardNum) {
   var data = {
     x: x,
     width: width,
@@ -649,12 +640,13 @@ function sendBoard(x, width, height, sx, sy, sid, nx, ny, nid, board, boardNum) 
     sx: sx,
     sy: sy,
     sid: sid,
+    smatrix: smatrix,
     nx: nx,
     ny: ny,
     nid: nid,
     board: board,
     boardNum: boardNum
-  }
+  };
   console.log(data);
   socket.emit('board', data);
 }
@@ -667,16 +659,20 @@ function setPause(data) {
 function sendPause(p) {
 	var data = {
     pause: p
-	}
+	};
   socket.emit('pause', data);
 }
 
-function sendStart(s, player) {
+function sendStart() {
 	var data = {
-    start: s,
     user: player
-  }
+  };
   socket.emit('start', data);
+  if(player == "one") {
+    player2Button.attribute("disabled", true);
+  } else if(player == "two") {
+    player1Button.attribute("disabled", true);
+  }
   fill(0);
   noStroke();
   rect(0, 415, canWidth, 20);
@@ -684,4 +680,16 @@ function sendStart(s, player) {
   fill(255, 0, 0);
   textSize(16);
   text("Waiting for other player...", canWidth / 2, 435);
+}
+
+function sendReset() {
+  var data = {
+    user: player
+  };
+  socket.emit('reset', data);
+  textAlign(CENTER);
+  fill(255, 0, 0);
+  noStroke();
+  textSize(16);
+  text("Waiting for other player...", canWidth / 2, 260 + blockWidth * 4);
 }
