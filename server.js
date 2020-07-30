@@ -1,5 +1,7 @@
 var start1;
 var start2;
+var reset1;
+var reset2;
 
 var express = require('express');
 var app = express();
@@ -29,9 +31,9 @@ io.sockets.on('connection', function (socket) {
   socket.on('start', function(data) {
     console.log("Received: 'start' " + data.user);
     if(data.user == "one") {
-      start1 = data.start;
-    } else {
-      start2 = data.start;
+      start1 = true;
+    } else if(data.user == "two") {
+      start2 = true;
     }
 
     if(start1 && start2) {
@@ -39,9 +41,24 @@ io.sockets.on('connection', function (socket) {
     }
   });
 
+  socket.on('reset', function(data) {
+    console.log("Received: 'reset' " + data.user);
+    if(data.user == "one") {
+      reset1 = true;
+    } else if(data.user == "two") {
+      reset2 = true;
+    }
+
+    if(reset1 && reset2) {
+      io.sockets.emit('reset', true);
+    }
+  });
+
   socket.on('disconnect', function() {
     console.log("Client has disconnected");
     start1 = false;
     start2 = false;
+    reset1 = false;
+    reset2 = false;
   });
 });
