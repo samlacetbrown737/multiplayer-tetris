@@ -32,10 +32,10 @@ io.sockets.on('connection', function (socket) {
     console.log("Received: 'start' " + data.user);
     if(data.user == "one") {
       start1 = true;
-    } else {
+    } else if(data.user == "two") {
       start2 = true;
     }
-    console.log(start1 + " " + start2)
+
     if(start1 && start2) {
       io.sockets.emit('start', true);
     }
