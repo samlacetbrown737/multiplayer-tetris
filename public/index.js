@@ -114,18 +114,13 @@ function setup() {
   userStartAudio();
   bgm = loadSound("Original Tetris Theme.mp3", loaded);
 
-  board1 = new Board(0, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
-  board2 = new Board(board2x, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
-
-  textFont(press2Play);
-  displayTitleScreen();
-
   socket = io.connect('http://localhost:56151');
-  socket.on('move', moveOther);
-  socket.on('otherShape', setOtherShape);
-  socket.on('otherNext', setOtherNextShape);
+  socket.on('board', setOtherBoard);
   socket.on('pause', setPause);
   socket.on('start', gameStarted);
+
+  textFont(press2Play);
+  displayTitleScreen();  
 	
   pauseButton = createButton("Pause");
   pauseButton.style("font-family: 'Press Start 2P'; font-size: 16;");
@@ -142,8 +137,14 @@ function setup() {
 
 function reset() {
 	score = 0;
-	board1 = new Board(0, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
-	board2 = new Board(board2x, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
+	if(player == "one") {
+    board1 = new Board(0, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
+    sendBoard(board1.x, board1.width, board1.height, board1.shape.x, board1.shape.y, board1.shape.id, board1.nextShape.x, board1.nextShape.y, board1.nextShape.id, board1.board, 1);
+  } else if(player == "two") {
+    board2 = new Board(board2x, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
+    sendBoard(board2.x, board2.width, board2.height, board2.shape.x, board2.shape.y, board2.shape.id, board2.nextShape.x, board2.nextShape.y, board2.nextShape.id, board2.board, 2);
+  }
+
 	rate = 30;
   resetButton.hide();
   gameIsOver = false;
@@ -151,8 +152,9 @@ function reset() {
   gameStarted();
 }
 
-function draw() {
-    frames++;
+function draw() { if(board1 != undefined && board2 != undefined) {
+  console.log("start draw");
+  frames++;
   //if first run, draw start screen
   if(startGame && !pause) {
     background(0);
@@ -161,30 +163,27 @@ function draw() {
     board2.draw();
 
     if(!gameIsOver) {
-      // Update board1
-      if(frames % rate == 0) {
-        if(!board1.doesCollide()) {
-          board1.shape.fall();
-        } else {
-          board1.shapeHit();
-          if(player == "one") {
-            board1.setNextShape(Math.floor(random(0, 7)));
+      if(player == "one") {
+        if(frames % rate == 0) {
+          if(!board1.doesCollide()) {
+            board1.shape.fall();
+          } else {
+            board1.shapeHit();
           }
         }
-      }
-      board1.drawShape();
-
-      // Update board2
-      if(frames % rate == 0) {
-        if(!board2.doesCollide()) {
-          board2.shape.fall();
-        } else {
-          board2.shapeHit();
-          if(player == "two") {
-            board2.setNextShape(Math.floor(random(0, 7)));
-          }          
+        sendBoard(board1.x, board1.width, board1.height, board1.shape.x, board1.shape.y, board1.shape.id, board1.nextShape.x, board1.nextShape.y, board1.nextShape.id, board1.board, 1);
+      } else {
+        if(frames % rate == 0) {
+          if(!board2.doesCollide()) {
+            board2.shape.fall();
+          } else {
+            board2.shapeHit();
+          }
         }
+        sendBoard(board2.x, board2.width, board2.height, board2.shape.x, board2.shape.y, board2.shape.id, board2.nextShape.x, board2.nextShape.y, board2.nextShape.id, board2.board, 2);
       }
+      
+      board1.drawShape();
       board2.drawShape();
 
       checkRowFilled();
@@ -201,7 +200,7 @@ function draw() {
 
     displayMiddle();
   }
-}
+}}
 
 // Class for left tetris shape
 class Shape {
@@ -212,7 +211,12 @@ class Shape {
 		this.id = id;
 		this.color = colors[id];
 		this.matrix = shapes[id];
-	}
+  }
+  
+  setter() {
+    this.color = colors[this.id];
+		this.matrix = shapes[this.id];
+  }
 
 	fall() {
 		this.y += 1;
@@ -242,13 +246,13 @@ class Board {
     }
   }
 
-  setNextShape(id) {
-    this.nextShape = new Shape(0, 0, id);
-    if(player == "one") {
-      sendNext(this.nextShape.id, 1);
-    } else {
-      sendNext(this.nextShape.id, 2);
-    }
+  setter(nx, ny, nid, board) {
+    this.shape.setter();
+
+    this.nextShape = new Shape(nx, ny, nid);
+    this.nextShape.setter();
+
+    this.board = board;
   }
 
   draw() {
@@ -302,6 +306,13 @@ class Board {
 			}
 		}
     this.shape = this.nextShape;
+    this.nextShape = new Shape(0, 0, Math.floor(random(0, 7)));
+    if(player == "one") {
+      sendBoard(this.x, this.width, this.height, this.shape.x, this.shape.y, this.shape.id, this.nextShape.x, this.nextShape.y, this.nextShape.id, this.board, 1);
+    } else if(player == "two") {
+      sendBoard(this.x, this.width, this.height, this.shape.x, this.shape.y, this.shape.id, this.nextShape.x, this.nextShape.y, this.nextShape.id, this.board, 2);
+    }
+    console.log(player + this.shape.id);
 	}
 
 	update() {
@@ -309,14 +320,18 @@ class Board {
 			if(!this.doesCollide()) {
 				this.shape.fall();
 			} else {
-				this.shapeHit();
+        this.shapeHit();
+        if(player == "one") {
+          board1.setNextShape(Math.floor(random(0, 7)));
+        } else {
+          board2.setNextShape(Math.floor(random(0, 7)));
+        }
 			}
 		}
 		this.drawShape();
 	}
 
 	rotatePiece() {
-    console.log('rotate')
 		var newArray = [];
 		var zeroArray = [];
 		for(var i = 3; i >= 0; i--) {
@@ -434,13 +449,16 @@ function drawBlock(x, y, id) {
 function keyPressed() {
 	if(!pause) {
     var board;
+    var boardNum;
 		if(player == "one") {
       board = board1;
+      boardNum = 1;
 		} else if(player == "two") {
       board = board2;
+      boardNum = 2;
     }
     var hit = false;
-    if(keyCode == LEFT_ARROW || keyCode == 65) {
+    if(keyCode == LEFT_ARROW) {
       for(var r = 0; r < board.shape.matrix.length; r++) {
         for(var c = 0; c < board.shape.matrix[0].length; c++) {
           if(board.shape.matrix[r][c] != 0) {
@@ -452,9 +470,9 @@ function keyPressed() {
       }
       if(!hit) {
         board.shape.x -= 1;
-        sendMove(keyCode, player);
+        sendBoard(board.x, board.width, board.height, board.shape.x, board.shape.y, board.shape.id, board.nextShape.x, board.nextShape.y, board.nextShape.id, board.board, boardNum);
       }
-    } else if(keyCode == RIGHT_ARROW || keyCode == 68) {
+    } else if(keyCode == RIGHT_ARROW) {
       for(var r = 0; r < board.shape.matrix.length; r++) {
         for(var c = 0; c < board.shape.matrix[0].length; c++) {
           if(board.shape.matrix[r][c] != 0) {
@@ -466,14 +484,14 @@ function keyPressed() {
       }
       if(!hit) {
         board.shape.x += 1;
-        sendMove(keyCode, player);
+        sendBoard(board.x, board.width, board.height, board.shape.x, board.shape.y, board.shape.id, board.nextShape.x, board.nextShape.y, board.nextShape.id, board.board, boardNum);
       }
-    } else if((keyCode == DOWN_ARROW || keyCode == 83) && !board.doesCollide()) {
+    } else if(keyCode == DOWN_ARROW && !board.doesCollide()) {
       board.shape.y += 1;
-      sendMove(keyCode, player);
-    } else if(keyCode == UP_ARROW  || keyCode == 87) {
+      sendBoard(board.x, board.width, board.height, board.shape.x, board.shape.y, board.shape.id, board.nextShape.x, board.nextShape.y, board.nextShape.id, board.board, boardNum);
+    } else if(keyCode == UP_ARROW) {
       board.rotatePiece();
-      sendMove(keyCode, player);
+      sendBoard(board.x, board.width, board.height, board.shape.x, board.shape.y, board.shape.id, board.nextShape.x, board.nextShape.y, board.nextShape.id, board.board, boardNum);
     } else if(keyCode == 32) {
       sendStart(true, player);
     }
@@ -489,30 +507,16 @@ function gameStarted() {
       player = "one";
     }
   }*/
+
   if(player == "one") {
-    sendShape(board1.shape.id, 1);
-  } else {
-    sendShape(board2.shape.id, 2);
+    board1 = new Board(0, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
+    sendBoard(board1.x, board1.width, board1.height, board1.shape.x, board1.shape.y, board1.shape.id, board1.nextShape.x, board1.nextShape.y, board1.nextShape.id, board1.board, 1);
+  } else if(player == "two"){
+    board2 = new Board(board2x, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
+    sendBoard(board2.x, board2.width, board2.height, board2.shape.x, board2.shape.y, board2.shape.id, board2.nextShape.x, board2.nextShape.y, board2.nextShape.id, board2.board, 2);
   }
-
-  if(player == "one") {
-    board1.setNextShape(Math.floor(random(0, 7)));
-  } else if(player == "two") {
-    board2.setNextShape(Math.floor(random(0, 7)));
-  }
-
-  /*board1.shape = board1.nextShape;
-  console.log("shape 1: " + board1.shape.id);
-  board2.shape = board2.nextShape;
-  console.log("shape 2: " + board2.shape.id);
-
-  if(player == "one") {
-    board1.setNextShape(Math.floor(random(0, 7)));
-  } else if(player == "two") {
-    board2.setNextShape(Math.floor(random(0, 7)));
-  }*/
   
-  frames = rate/2;
+  frames = rate / 2;
   startGame = true;
   document.getElementById("logo").style = "display:none;";
   player1Button.hide();
@@ -625,31 +629,34 @@ function displayTitleScreen() {
 	text("officially connected with the Tetris Company, LLC or Tetris Holding LLC.", canWidth / 2, canHeight - 30);
 }
 
-function moveOther(data) {
-  var board;
-	if(data.user == "one") {
-    board = board1;
-	} else {
-    board = board2;
-  }
-  console.log(data.keyPressed)
-  if(data.keyPressed == LEFT_ARROW || data.keyPresssed == 65) {
-    board.shape.x -= 1;
-  } else if(data.keyPressed == RIGHT_ARROW || data.keyPressed == 68) {
-    board.shape.x += 1;
-  } else if(data.keyPressed == DOWN_ARROW || data.keyPressed == 83) {
-    board.shape.y += 1;
-  } else if(data.keyPressed == UP_ARROW || data.keyPressed == 87) {
-    board.rotatePiece();
+function setOtherBoard(data) {
+  if(data.boardNum == 1) {
+    board1 = new Board(data.x, data.width, data.height, new Shape(data.sx, data.sy, data.sid));
+    board1.setter(data.nx, data.ny, data.nid, data.board);
+    console.log(board1);
+  } else {
+    board2 = new Board(data.x, data.width, data.height, new Shape(data.sx, data.sy, data.sid));
+    board2.setter(data.nx, data.ny, data.nid, data.board);
+    console.log(board2);
   }
 }
 
-function sendMove(key, player) {
-	var data = {
-		keyPressed: key,
-		user: player
-	};
-	socket.emit('move', data);
+function sendBoard(x, width, height, sx, sy, sid, nx, ny, nid, board, boardNum) {
+  var data = {
+    x: x,
+    width: width,
+    height: height,
+    sx: sx,
+    sy: sy,
+    sid: sid,
+    nx: nx,
+    ny: ny,
+    nid: nid,
+    board: board,
+    boardNum: boardNum
+  }
+  console.log(data);
+  socket.emit('board', data);
 }
 
 function setPause(data) {
@@ -677,36 +684,4 @@ function sendStart(s, player) {
   fill(255, 0, 0);
   textSize(16);
   text("Waiting for other player...", canWidth / 2, 435);
-}
-
-function setOtherShape(data) {
-  if(data.board == 1) {
-    board1.shape = new Shape(0, 0, data.id);
-  } else {
-    board2.shape = new Shape(0, 0, data.id);
-  }
-}
-
-function sendShape(id, board) {
-  var data = {
-    id: id,
-    board: board
-  }
-  socket.emit('otherShape', data);
-}
-
-function setOtherNextShape(data) {
-  if(data.board == 1) {
-    board1.nextShape = new Shape(0, 0, data.id);
-  } else if(data.board == 2) {
-    board2.nextShape = new Shape(0, 0, data.id);
-  }
-}
-
-function sendNext(id, board) {
-  var data = {
-    id: id,
-    board: board
-  }
-  socket.emit('otherNext', data);
 }
