@@ -16,7 +16,7 @@ var colors3;
 var colors4;
 
 var logo;
-var bgm;
+//var bgm;
 var press2Play;
 
 var blockWidth = 30;
@@ -111,13 +111,16 @@ function setup() {
     color(80, 21, 120) //T
     ];
   
-  userStartAudio();
-  bgm = loadSound("Original Tetris Theme.mp3", loaded);
+  //userStartAudio();
+  //bgm = loadSound("Original Tetris Theme.mp3", loaded);
 
-  socket = io.connect('http://localhost:56151');
+  
+ //socket = io.connect('localhost:56151');
+  socket = io.connect('http://73.181.243.148:56151');
   socket.on('board', setOtherBoard);
   socket.on('pause', setPause);
   socket.on('start', gameStarted);
+  socket.on('score', scoreChange)
   socket.on('reset', reset);
 
   textFont(press2Play);
@@ -184,12 +187,14 @@ function draw() { if(board1 != undefined && board2 != undefined) {
 
     displayMiddle();
   } else {
-    textAlign(CENTER);
-    textSize(70);
-    fill(255);
-    stroke("black");
-    text("GAME OVER", canWidth / 2, canHeight / 2);
-    resetButton.show();
+    if(!pause) {
+      textAlign(CENTER);
+      textSize(70);
+      fill(255);
+      stroke("black");
+      text("GAME OVER", canWidth / 2, canHeight / 2);
+      resetButton.show();
+    }
   }
 }}
 
@@ -415,7 +420,7 @@ class Board {
   // If top row of board has blocks, game over.
   checkGameOver() {
     for(var j = 0; j < this.board[0].length; j++) {
-      if(this.board[0][j] != 0) {
+      if(this.board[0][j] != 0 && !pause) {
         gameIsOver = true;
         break;
       }
@@ -491,13 +496,6 @@ function keyPressed() {
 
 function gameStarted() {
   background(0);
-  /* if(player == "unknown") {
-    if(data.user == "one") {
-      player = "two";
-    } else {
-      player = "one";
-    }
-  }*/
 
   if(player == "one") {
     board1 = new Board(0, widthX, heightY, new Shape(0, 0, Math.floor(random(0, 7))));
@@ -586,6 +584,10 @@ function checkRowFilled() {
 			if(rate > 6) {
 				rate -= 2;
 			}
+      sendScore();
+
+      sendBoard(board1.x, board1.width, board1.height, board1.shape.x, board1.shape.y, board1.shape.id, board1.shape.matrix, board1.nextShape.x, board1.nextShape.y, board1.nextShape.id, board1.board, 1);
+      sendBoard(board2.x, board2.width, board2.height, board2.shape.x, board2.shape.y, board2.shape.id, board2.shape.matrix, board2.nextShape.x, board2.nextShape.y, board2.nextShape.id, board2.board, 2);
 		}
 	}
 }
@@ -692,4 +694,15 @@ function sendReset() {
   noStroke();
   textSize(16);
   text("Waiting for other player...", canWidth / 2, 260 + blockWidth * 4);
+}
+
+function sendScore() {
+  var data = {
+    scoreSent: score
+  }
+  socket.emit('score', data);
+}
+
+function scoreChange(data) {
+  score = data.scoreSent;
 }
