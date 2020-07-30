@@ -23,6 +23,11 @@ io.sockets.on('connection', function (socket) {
     socket.broadcast.emit('board', data);
   });
 
+  socket.on('score', function(data) {
+    console.log("Score: " + data.scoreSent)
+    socket.broadcast.emit('score', data);
+  });
+
   socket.on('pause', function(data) {
     console.log("Received: 'pause' " + data.pause);
     socket.broadcast.emit('pause', data);
@@ -51,6 +56,8 @@ io.sockets.on('connection', function (socket) {
 
     if(reset1 && reset2) {
       io.sockets.emit('reset', true);
+      reset1 = false;
+      reset2 = false;
     }
   });
 
@@ -58,7 +65,6 @@ io.sockets.on('connection', function (socket) {
     console.log("Client has disconnected");
     start1 = false;
     start2 = false;
-    reset1 = false;
-    reset2 = false;
+
   });
 });
