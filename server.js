@@ -17,19 +17,8 @@ var io = require('socket.io')(server);
 io.sockets.on('connection', function (socket) {
   console.log("We have a new client: " + socket.id);
 
-  socket.on('move', function(data) {
-    console.log("Key " + data.keyPressed + " from player " + data.user);
-    socket.broadcast.emit('move', data);
-  });
-
-  socket.on('otherShape', function(data) {
-    console.log("Shape " + data.id);
-    socket.broadcast.emit('otherShape', data);
-  });
-
-  socket.on('otherNext', function(data) {
-    console.log("Next shape " + data.id);
-    socket.broadcast.emit('otherNext', data);
+  socket.on('board', function(data) {
+    socket.broadcast.emit('board', data);
   });
 
   socket.on('pause', function(data) {
