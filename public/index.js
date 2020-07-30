@@ -152,7 +152,7 @@ function reset() {
 }
 
 function draw() {
-  frames++;
+    frames++;
   //if first run, draw start screen
   if(startGame && !pause) {
     background(0);
@@ -246,10 +246,8 @@ class Board {
     this.nextShape = new Shape(0, 0, id);
     if(player == "one") {
       sendNext(this.nextShape.id, 1);
-      console.log('Next 1: ' + this.nextShape.id);
     } else {
       sendNext(this.nextShape.id, 2);
-      console.log('Next 2: ' + this.nextShape.id);
     }
   }
 
@@ -304,7 +302,6 @@ class Board {
 			}
 		}
     this.shape = this.nextShape;
-    console.log(player + this.shape.id);
 	}
 
 	update() {
@@ -319,6 +316,7 @@ class Board {
 	}
 
 	rotatePiece() {
+    console.log('rotate')
 		var newArray = [];
 		var zeroArray = [];
 		for(var i = 3; i >= 0; i--) {
@@ -442,7 +440,7 @@ function keyPressed() {
       board = board2;
     }
     var hit = false;
-    if(keyCode == LEFT_ARROW) {
+    if(keyCode == LEFT_ARROW || keyCode == 65) {
       for(var r = 0; r < board.shape.matrix.length; r++) {
         for(var c = 0; c < board.shape.matrix[0].length; c++) {
           if(board.shape.matrix[r][c] != 0) {
@@ -456,7 +454,7 @@ function keyPressed() {
         board.shape.x -= 1;
         sendMove(keyCode, player);
       }
-    } else if(keyCode == RIGHT_ARROW) {
+    } else if(keyCode == RIGHT_ARROW || keyCode == 68) {
       for(var r = 0; r < board.shape.matrix.length; r++) {
         for(var c = 0; c < board.shape.matrix[0].length; c++) {
           if(board.shape.matrix[r][c] != 0) {
@@ -470,11 +468,12 @@ function keyPressed() {
         board.shape.x += 1;
         sendMove(keyCode, player);
       }
-    } else if(keyCode == DOWN_ARROW && !board.doesCollide()) {
+    } else if((keyCode == DOWN_ARROW || keyCode == 83) && !board.doesCollide()) {
       board.shape.y += 1;
       sendMove(keyCode, player);
-    } else if(keyCode == UP_ARROW) {
+    } else if(keyCode == UP_ARROW  || keyCode == 87) {
       board.rotatePiece();
+      sendMove(keyCode, player);
     } else if(keyCode == 32) {
       sendStart(true, player);
     }
@@ -513,7 +512,7 @@ function gameStarted() {
     board2.setNextShape(Math.floor(random(0, 7)));
   }*/
   
-  frames = 0;
+  frames = rate/2;
   startGame = true;
   document.getElementById("logo").style = "display:none;";
   player1Button.hide();
@@ -633,14 +632,14 @@ function moveOther(data) {
 	} else {
     board = board2;
   }
-
-  if(data.keyPressed == LEFT_ARROW) {
+  console.log(data.keyPressed)
+  if(data.keyPressed == LEFT_ARROW || data.keyPresssed == 65) {
     board.shape.x -= 1;
-  } else if(data.keyPressed == RIGHT_ARROW) {
+  } else if(data.keyPressed == RIGHT_ARROW || data.keyPressed == 68) {
     board.shape.x += 1;
-  } else if(data.keyPressed == DOWN_ARROW) {
+  } else if(data.keyPressed == DOWN_ARROW || data.keyPressed == 83) {
     board.shape.y += 1;
-  } else if(data.keyPresssed == UP_ARROW) {
+  } else if(data.keyPressed == UP_ARROW || data.keyPressed == 87) {
     board.rotatePiece();
   }
 }
